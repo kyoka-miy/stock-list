@@ -11,6 +11,9 @@ psycopg2-binary = "*"
 alembic = "*"
 sqlalchemy = "*"
 pydantic = {extras = ["email"], version = "*"}
+requests = "*"
+yfinance = "*"
+pykakasi = "*"
 
 [dev-packages]
 
