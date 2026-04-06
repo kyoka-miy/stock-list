@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-import yfinance
 
 from app.usecase.stock_usecase import StockUseCase
 from app.domain.schemas.stock_search_response import StockSearchResponse

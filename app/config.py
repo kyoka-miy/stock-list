@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     POSTGRES_PORT: str
     SQLALCHEMY_DATABASE_URI: Optional[str] = None
     YAHOO_FINANCE_URL: str
-    
+
     @field_validator("SQLALCHEMY_DATABASE_URI", mode="after")
     def assemble_db_connection(cls, v: Optional[str], values: ValidationInfo) -> Any:
         if isinstance(v, str):
@@ -35,10 +35,10 @@ class Settings(BaseSettings):
                 username=values.data.get("POSTGRES_USER"),
                 password=values.data.get("POSTGRES_PASSWORD"),
                 host=values.data.get("POSTGRES_SERVER"),
-                port=int(values.data.get("POSTGRES_PORT")),
+                port=int(values.data.get("POSTGRES_PORT") or 5432),
                 path=f"{values.data.get('POSTGRES_DB') or ''}",
             )
         )
 
 
-settings = Settings()
+settings = Settings() # type: ignore

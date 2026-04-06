@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from app.db.session import get_db
 from sqlalchemy.orm import Session
@@ -28,7 +28,7 @@ class AccountRepositoryImpl(AccountRepository):
             self.db.rollback()
             raise AppException("Email already exists") from e
         
-    def get_account_by_id(self, id: int) -> Account:
+    def get_account_by_id(self, id: int) -> Optional[Account]:
         return self.db.query(Account).filter(Account.id == id).first()
     
     def update_account(self, account: Account) -> Account:

@@ -16,11 +16,12 @@ venv/
 *.log
 
 # Database
-*.db
+/app/db/postgres/*
+/app/db/postgresql/*
 *.sqlite3
 
-# Alembic
-alembic/versions/*.pyc
+# Migrations
+migration/versions/*.py
 
 # IDE
 .vscode/

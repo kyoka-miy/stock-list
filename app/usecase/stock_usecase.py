@@ -5,12 +5,16 @@ import pandas as pd
 
 from app.domain.schemas.stock_search_response import StockSearchResponse
 from app.config import settings
-import urllib.parse
 
 from app.exceptions.app_exception import AppException
 
 
 class StockUseCase:
+
+    _YAHOO_URL_BASE = "https://finance.yahoo.com/quote/"
+    _IRBANK_URL_BASE = "https://irbank.net/"
+    _BUFFETT_CODE_URL_BASE = "https://www.buffett-code.com/company/"
+
     def __init__(self):
         pass
 
@@ -26,23 +30,22 @@ class StockUseCase:
     def _search_csv(self, query: str) -> list[StockSearchResponse]:
         results = []
         try:
-            df = pd.read_csv("data_j.csv")
-            # Partial match search for company name
+            df = pd.read_csv("app/data/data_j.csv")
+
             matched = df[df["銘柄名"].str.contains(query, na=False)]
             for _, row in matched.iterrows():
                 code = str(row["コード"])
-                name = row["銘柄名"]
                 results.append(
                     StockSearchResponse(
                         symbol=code,
-                        name=name,
-                        yahoo_url=f"https://finance.yahoo.com/quote/{code}.T",
-                        ir_bank_url=f"https://irbank.net/{code}",
-                        buffett_code_url=f"https://www.buffett-code.com/company/{code}"
+                        name=row["銘柄名"],
+                        yahoo_url=f"{self._YAHOO_URL_BASE}{code}.T",
+                        ir_bank_url=f"{self._IRBANK_URL_BASE}{code}",
+                        buffett_code_url=f"{self._BUFFETT_CODE_URL_BASE}{code}"
                     )
                 )
         except Exception as e:
-            pass
+            raise AppException(f"Failed to search stocks from CSV: {e}") from e
         return results
 
     def _search_api(self, query: str) -> list[StockSearchResponse]:
@@ -53,7 +56,7 @@ class StockUseCase:
         kakasi.setMode("r", "Hepburn")  # Use Hepburn Romanization
         kakasi.setMode("s", True)  # Add space
         converter = kakasi.getConverter()
-        
+
         converted_query = converter.do(query)
         url = settings.YAHOO_FINANCE_URL.format(query=converted_query)
         headers = {"User-Agent": "Mozilla/5.0"}
@@ -70,9 +73,9 @@ class StockUseCase:
             StockSearchResponse(
                 symbol=item["symbol"],
                 name=item.get("longname", item.get("shortname", "")),
-                yahoo_url=f"https://finance.yahoo.com/quote/{item['symbol']}",
-                ir_bank_url=f"https://irbank.net/{item['symbol']}",
-                buffett_code_url=f"https://www.buffett-code.com/company/{item['symbol']}"
+                yahoo_url=f"{self._YAHOO_URL_BASE}{item['symbol']}",
+                ir_bank_url=f"{self._IRBANK_URL_BASE}{item['symbol']}",
+                buffett_code_url=f"{self._BUFFETT_CODE_URL_BASE}{item['symbol']}"
             )
             for item in data.get("quotes", [])
             if item.get("exchange") in allowed_exchanges

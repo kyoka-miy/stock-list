@@ -23,6 +23,6 @@ python_full_version = "3.13.7"
 
 [scripts]
 start = "uvicorn app.main:app --reload"
-upgrade = "alembic upgrade head"
 autogenerate = "alembic revision --autogenerate -m"
+upgrade = "alembic upgrade head"
 init = "alembic init migration"

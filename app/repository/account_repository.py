@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 
 from app.domain.models.account import Account
 
@@ -13,7 +13,7 @@ class AccountRepository(ABC):
         pass
 
     @abstractmethod
-    def get_account_by_id(self, id: int) -> Account:
+    def get_account_by_id(self, id: int) -> Optional[Account]:
         pass
 
     @abstractmethod

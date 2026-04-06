@@ -12,7 +12,6 @@ router = APIRouter(tags=["Accounts"], prefix="/accounts")
 def get_accounts(usecase: AccountUseCase = Depends(AccountUseCase)):
     return usecase.get_accounts()
 
-
 @router.post("/", response_model=AccountSchema)
 def create_account(account: AccountSchema, usecase: AccountUseCase = Depends(AccountUseCase)):
     return usecase.create_account(Account(**account.model_dump()))
