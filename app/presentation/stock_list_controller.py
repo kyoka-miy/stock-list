@@ -1,12 +1,24 @@
 from fastapi import APIRouter, Depends
 
 from app.domain.schemas.stock_list_schema import StockListSchema
+from app.domain.schemas.stock_list_with_stocks_schema import StockListWithStocksSchema
 from app.domain.models.stock_list import StockList
 from app.domain.schemas.stock_list_name_request import StockListNameRequest
 from app.domain.schemas.stock_list_symbols_request import StockListSymbolsRequest
 
 from fastapi.responses import JSONResponse
+import yfinance as yf
 from app.usecase.stock_list_usecase import StockListUseCase
+
+
+def get_stock_indicators(symbol: str) -> dict:
+    try:
+        ticker = yf.Ticker(symbol)
+        info = ticker.info
+        return info if isinstance(info, dict) else {}
+    except Exception:
+        return {}
+
 
 router = APIRouter(tags=["Stock Lists"], prefix="/stock-lists")
 
@@ -32,7 +44,16 @@ def remove_symbols_from_stock_list(id: int, request: StockListSymbolsRequest, us
     usecase.remove_symbols_from_list(id, request.symbols)
     return JSONResponse(content={"message": "Symbols removed from the list successfully"})
 
+
 @router.delete("/{id}")
 def delete_stock_list(id: int, usecase: StockListUseCase = Depends(StockListUseCase)):
     usecase.delete_list(id)
     return JSONResponse(content={"message": "Stock list deleted successfully"})
+
+
+@router.get("/{id}", response_model=StockListWithStocksSchema)
+def get_stock_list_with_indicators(
+    id: int,
+    usecase: StockListUseCase = Depends(StockListUseCase)
+):
+    return usecase.get_stock_list_with_indicators(id)

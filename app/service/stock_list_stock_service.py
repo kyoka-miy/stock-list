@@ -18,5 +18,8 @@ class StockListStockService:
         symbols_in_list = set(self.repository.get_symbols_by_stock_list_id(stock_list_id))
         return [symbol for symbol in symbols if symbol not in symbols_in_list]
     
+    def get_symbols_by_list_id(self, stock_list_id: int) -> list[str]:
+        return self.repository.get_symbols_by_stock_list_id(stock_list_id)
+    
     def delete_list(self, stock_list_id: int) -> None:
         self.repository.remove_list(stock_list_id)
