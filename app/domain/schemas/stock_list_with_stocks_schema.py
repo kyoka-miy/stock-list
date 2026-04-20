@@ -3,7 +3,11 @@ from typing import Any
 from pydantic import BaseModel
 
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Generic, TypeVar, List, Optional
+
+from app.domain.schemas.page_schema import PageSchema
+
 
 
 class StockInfoSchema(BaseModel):
@@ -24,4 +28,4 @@ class StockInfoSchema(BaseModel):
 
 class StockListWithStocksSchema(BaseModel):
     name: str
-    stocks: list[StockInfoSchema]
+    stocks: PageSchema

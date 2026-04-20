@@ -3,6 +3,7 @@ import pprint
 from fastapi import Depends
 
 from app.domain.models.stock_list import StockList
+from app.domain.schemas.page_schema import PageSchema
 from app.domain.schemas.stock_list_with_stocks_schema import StockListWithStocksSchema, StockInfoSchema
 from app.exceptions.app_exception import AppException
 from app.service.dependencies import get_stock_list_service, get_stock_list_stock_service
@@ -14,7 +15,8 @@ from yfinance import Ticker
 class StockListUseCase:
     def __init__(
             self,
-            stock_list_service: StockListService = Depends(get_stock_list_service),
+            stock_list_service: StockListService = Depends(
+                get_stock_list_service),
             stock_list_stock_service: StockListStockService = Depends(get_stock_list_stock_service)):
         self.stock_list_service = stock_list_service
         self.stock_list_stock_service = stock_list_stock_service
@@ -68,7 +70,7 @@ class StockListUseCase:
 
 # TODO: sort, pagenation, cache
 
-    def get_stock_list_with_indicators(self, stock_list_id: int):
+    def get_stock_list_with_indicators(self, stock_list_id: int, pageSize: int = 20, pageNumber: int = 1) -> StockListWithStocksSchema:
         stock_list = self.stock_list_service.get_stock_list_by_id(
             stock_list_id)
 
@@ -104,7 +106,11 @@ class StockListUseCase:
             ))
         return StockListWithStocksSchema(
             name=stock_list.name,
-            stocks=stocks
+            stocks=PageSchema(
+                pageNumber=pageNumber,
+                pageSize=pageSize,
+                items=stocks
+            )
         )
 
     def _get_percent_and_round(self, val):

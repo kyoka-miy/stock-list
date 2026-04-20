@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.domain.schemas.stock_list_schema import StockListSchema
 from app.domain.schemas.stock_list_with_stocks_schema import StockListWithStocksSchema
@@ -54,6 +54,8 @@ def delete_stock_list(id: int, usecase: StockListUseCase = Depends(StockListUseC
 @router.get("/{id}", response_model=StockListWithStocksSchema)
 def get_stock_list_with_indicators(
     id: int,
+    pageSize: int = Query(20, ge=1, le=100),
+    pageNumber: int = Query(1, ge=1),
     usecase: StockListUseCase = Depends(StockListUseCase)
 ):
-    return usecase.get_stock_list_with_indicators(id)
+    return usecase.get_stock_list_with_indicators(id, pageSize=pageSize, pageNumber=pageNumber)
