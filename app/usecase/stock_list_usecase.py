@@ -1,4 +1,7 @@
+
 import pprint
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from app.util.redis_cache import redis_cache
 
 from fastapi import Depends
 
@@ -10,6 +13,8 @@ from app.service.dependencies import get_stock_list_service, get_stock_list_stoc
 from app.service.impl.stock_list_service_impl import StockListService
 from app.service.impl.stock_list_stock_service_impl import StockListStockService
 from yfinance import Ticker
+
+from app.util.constants.sort_order_constants import SortOrderConstants
 
 
 class StockListUseCase:
@@ -68,42 +73,60 @@ class StockListUseCase:
         self.stock_list_service.delete_list(stock_list_id)
 
 
-# TODO: sort, pagenation, cache
-
-    def get_stock_list_with_indicators(self, stock_list_id: int, pageSize: int = 20, pageNumber: int = 1) -> StockListWithStocksSchema:
+    def get_stock_list_with_indicators(self, stock_list_id: int, pageSize: int, pageNumber: int, sortKey: str, sortOrder: SortOrderConstants) -> StockListWithStocksSchema:
         stock_list = self.stock_list_service.get_stock_list_by_id(
             stock_list_id)
 
         symbols = self.stock_list_stock_service.get_symbols_by_list_id(
             stock_list_id)
         stocks: list[StockInfoSchema] = []
-        for symbol in symbols:
+
+        def fetch_info(symbol):
+            cached = redis_cache.get(symbol)
+            if cached:
+                return symbol, cached
             try:
                 ticker = Ticker(symbol)
                 info = ticker.info
                 if info.get("symbol") != symbol:
-                    continue
+                    return symbol, None
+                redis_cache.set(symbol, info)
+                return symbol, info
             except Exception:
-                raise AppException(
-                    f"Failed to fetch data for symbol: {symbol}")
-            pprint.pprint(info)
+                return symbol, None
 
-            stocks.append(StockInfoSchema(
-                symbol=symbol,
-                name=info.get("longName") or info.get("shortName") or "",
-                current_price=info.get("currentPrice"),
-                dividend_yield=info.get("dividendYield"),  # 配当利回り
-                dividend_per_share=info.get("dividendRate"),  # 1株あたりの配当金
-                payout_ratio=self._get_percent_and_round(
-                    info.get("payoutRatio")),  # 配当性向
-                per=self._get_round(info.get("trailingPE")),
-                pbr=self._get_round(info.get("priceToBook")),
-                roe=self._get_percent_and_round(info.get("returnOnEquity")),
-                roa=self._get_percent_and_round(info.get("returnOnAssets")),
-                market=info.get("exchange"),
-                sector=info.get("sector"),
-                industry=info.get("industry")
-            ))
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            future_to_symbol = {executor.submit(
+                fetch_info, symbol): symbol for symbol in symbols}
+
+            for future in as_completed(future_to_symbol):
+                symbol, info = future.result()
+                if not info:
+                    continue
+                pprint.pprint(info)
+                stocks.append(StockInfoSchema(
+                    symbol=symbol,
+                    name=info.get("longName") or info.get("shortName") or "",
+                    current_price=info.get("currentPrice"),
+                    dividend_yield=info.get("dividendYield"),  # 配当利回り
+                    dividend_per_share=info.get("dividendRate"),  # 1株あたりの配当金
+                    payout_ratio=self._get_percent_and_round(
+                        info.get("payoutRatio")),  # 配当性向
+                    per=self._get_round(info.get("trailingPE")),
+                    pbr=self._get_round(info.get("priceToBook")),
+                    roe=self._get_percent_and_round(
+                        info.get("returnOnEquity")),
+                    roa=self._get_percent_and_round(
+                        info.get("returnOnAssets")),
+                    market=info.get("exchange"),
+                    sector=info.get("sector"),
+                    industry=info.get("industry")
+                ))
+
+        reverse = sortOrder == SortOrderConstants.DESC
+
+        stocks.sort(key=lambda x: self._sort_key(x, sortKey), reverse=reverse)
+
         return StockListWithStocksSchema(
             name=stock_list.name,
             stocks=PageSchema(
@@ -122,3 +145,10 @@ class StockListUseCase:
         if isinstance(val, (int, float)):
             return round(val, 2)
         return None
+
+    def _sort_key(self, x: StockInfoSchema, sortKey: str):
+        value = getattr(x, sortKey, None)
+        # None always will be at the end
+        if value is None:
+            return (1,)
+        return (0, value)

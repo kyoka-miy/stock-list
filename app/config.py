@@ -23,12 +23,16 @@ class Settings(BaseSettings):
     POSTGRES_PORT: str
     SQLALCHEMY_DATABASE_URI: Optional[str] = None
     YAHOO_FINANCE_URL: str
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_DB: int
+    REDIS_TTL: int
 
     @field_validator("SQLALCHEMY_DATABASE_URI", mode="after")
     def assemble_db_connection(cls, v: Optional[str], values: ValidationInfo) -> Any:
         if isinstance(v, str):
             return v
-        
+
         return str(
             PostgresDsn.build(
                 scheme="postgresql",
@@ -41,4 +45,4 @@ class Settings(BaseSettings):
         )
 
 
-settings = Settings() # type: ignore
+settings = Settings()  # type: ignore

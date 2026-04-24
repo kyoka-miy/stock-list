@@ -9,6 +9,7 @@ from app.domain.schemas.stock_list_symbols_request import StockListSymbolsReques
 from fastapi.responses import JSONResponse
 import yfinance as yf
 from app.usecase.stock_list_usecase import StockListUseCase
+from app.util.constants.sort_order_constants import SortOrderConstants
 
 
 def get_stock_indicators(symbol: str) -> dict:
@@ -56,6 +57,14 @@ def get_stock_list_with_indicators(
     id: int,
     pageSize: int = 20,
     pageNumber: int = 1,
+    sortKey: str = "symbol",
+    sortOrder: SortOrderConstants = SortOrderConstants.ASC,
     usecase: StockListUseCase = Depends(StockListUseCase)
 ):
-    return usecase.get_stock_list_with_indicators(id, pageSize=pageSize, pageNumber=pageNumber)
+    return usecase.get_stock_list_with_indicators(
+        id,
+        pageSize=pageSize,
+        pageNumber=pageNumber,
+        sortKey=sortKey,
+        sortOrder=sortOrder
+    )
